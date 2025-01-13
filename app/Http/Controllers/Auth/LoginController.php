@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -34,10 +33,14 @@ class LoginController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Verificar si el usuario es administrador
+        $isAdmin = in_array($user->email, config('admins.emails'));
+
         return response()->json([
             'message' => 'Inicio de sesión exitoso',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'is_admin' => $isAdmin,
         ]);
     }
 }
