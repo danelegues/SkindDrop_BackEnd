@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'email',
         'password',
+        'balance'
     ];
 
     /**
@@ -46,8 +47,26 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    // Event Listener para validar balance antes de guardar
+    public static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($user) {
+            if ($user->balance < 0) {
+                // Lanzar una excepción genérica con un mensaje de error
+                throw new \Exception('El balance no puede ser menor a 0.');
+            }
+        });
+    }
+
     public function inventory()
     {
         return $this->hasOne(Inventory::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

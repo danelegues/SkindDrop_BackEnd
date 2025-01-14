@@ -11,18 +11,23 @@ class Item extends Model
 
     protected $fillable = [
         'name',
-        'image_url',
-        'rarity',
+        'image_url', 
         'price',
+        'rarity',
         'category',
-        'inventory_id',
         'wear',
-        'status'
+        'status',
+        'inventory_id'
     ];
 
     // Un item pertenece a un inventario (belongs to)
     public function inventory()
     {
         return $this->belongsTo(Inventory::class);
+    }
+    //pruebaCarlos
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

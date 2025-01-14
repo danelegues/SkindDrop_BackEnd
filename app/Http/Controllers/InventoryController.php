@@ -78,7 +78,6 @@ class InventoryController extends Controller
                 'wear' => $validated['wear'],
                 'status' => 'available'
             ]);
-            
 
             return response()->json([
                 'message' => 'Item created successfully',
@@ -87,6 +86,57 @@ class InventoryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addItem(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            // Validar los datos recibidos
+            $request->validate([
+                'name' => 'required|string',
+                'image_url' => 'required|string',
+                'price' => 'required|numeric',
+                'rarity' => 'required|string',
+                'category' => 'required|string',
+                'wear' => 'required|string',
+                'status' => 'required|string'
+            ]);
+
+            // Crear el item
+            $item = Item::create([
+                'name' => $request->name,
+                'image_url' => $request->image_url,
+                'price' => $request->price,
+                'rarity' => $request->rarity,
+                'category' => $request->category,
+                'wear' => $request->wear,
+                'status' => $request->status
+            ]);
+
+            // Buscar o crear el inventario del usuario
+            $inventory = Inventory::firstOrCreate(
+                ['user_id' => $user->id],
+                ['status' => 'available']
+            );
+
+            // Asociar el item al inventario
+            $item->inventory_id = $inventory->id;
+            $item->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item añadido correctamente',
+                'data' => $item
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al añadir el item: ' . $e->getMessage()
             ], 500);
         }
     }

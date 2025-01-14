@@ -21,10 +21,28 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'member_since' => $user->created_at,
                 'email_verified_at' => $user->email_verified_at,
+                'balance' => $user->balance,
                 // Agrega cualquier otro campo que necesites
             ]
         ]);
     }
+
+    public function store(Request $request)
+{
+    $request->validate([
+        'balance' => 'required|numeric|min:0',
+    ]);
+
+    // Aquí puedes crear el usuario
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'balance' => $request->balance,
+        'password' => bcrypt($request->password),
+    ]);
+
+    return response()->json($user);
+}
 
     public function update(Request $request)
     {
@@ -45,6 +63,7 @@ class ProfileController extends Controller
                     'email' => $user->email,
                     'member_since' => $user->created_at,
                     'email_verified_at' => $user->email_verified_at,
+                    'balance' => $user->balance,
                 ]
             ]);
         } catch (\Exception $e) {

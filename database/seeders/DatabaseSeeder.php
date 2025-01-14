@@ -18,6 +18,11 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
+        // Actualizar el balance del usuario
+        $user->update([
+            'balance' => 300
+        ]);
+
         // Crear el inventario para el usuario
         $inventory = Inventory::create([
             'user_id' => $user->id,

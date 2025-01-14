@@ -31,5 +31,5 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // Rutas de inventario
     Route::get('/inventory', [InventoryController::class, 'index']);
-    Route::post('/inventory', [InventoryController::class, 'store']); // Añadimos esta ruta
+    Route::post('/inventory', [InventoryController::class, 'store']); // Esta es la nueva ruta para la apertura de cajas
 });

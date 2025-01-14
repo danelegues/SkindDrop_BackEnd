@@ -17,9 +17,14 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->decimal('balance', 10, 2)->default(0);
             $table->rememberToken();
             $table->timestamps();
+
         });
+
+        // Agregar la restricción CHECK a balance
+        //DB::statement('ALTER TABLE users ADD CONSTRAINT balance_check CHECK (balance >= 0)');
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
@@ -45,5 +50,11 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('balance');
+        });
+
+        // Eliminar la restricción CHECK si existe
+        //DB::statement('ALTER TABLE users DROP CONSTRAINT balance_check');
     }
 };
