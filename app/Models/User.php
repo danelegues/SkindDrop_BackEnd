@@ -69,4 +69,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Transaction::class);
     }
+
+    // Asegúrate de que el balance se castee a decimal
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'balance' => 'decimal:2'
+    ];
 }

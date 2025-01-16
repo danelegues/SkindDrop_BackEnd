@@ -23,9 +23,6 @@ return new class extends Migration
 
         });
 
-        // Agregar la restricción CHECK a balance
-        //DB::statement('ALTER TABLE users ADD CONSTRAINT balance_check CHECK (balance >= 0)');
-
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
@@ -54,7 +51,5 @@ return new class extends Migration
             $table->dropColumn('balance');
         });
 
-        // Eliminar la restricción CHECK si existe
-        //DB::statement('ALTER TABLE users DROP CONSTRAINT balance_check');
     }
 };

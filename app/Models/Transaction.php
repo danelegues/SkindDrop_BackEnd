@@ -6,7 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['user_id', 'item_id', 'amount', 'status'];
+    protected $fillable = [
+        'user_id',
+        'item_id',
+        'type',
+        'amount',
+        'status',
+        'price'
+    ];
 
     // Relación muchos a uno con User
     public function user()

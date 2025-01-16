@@ -12,17 +12,64 @@ class ItemSeeder extends Seeder
         $items = [
             [
                 'name' => 'AK-47 | Asiimov',
-                'image_url' => 'https://ejemplo.com/ak47-asiimov.png',
+                'image_url' => 'img/akruleta.png',
+                'price' => 10.00,
                 'rarity' => 'legendary',
-                'price' => 50.00
+                'category' => 'rifle',
+                'wear' => 'minimal wear',
+                'status' => 'available',
+                'inventory_id' => 2, // ID del inventario asociado
             ],
             [
                 'name' => 'M4A4 | Dragon King',
-                'image_url' => 'https://ejemplo.com/m4a4-dragon-king.png',
+                'image_url' => 'img/m4a4.png',
+                'price' => 15.00,
                 'rarity' => 'epic',
-                'price' => 25.00
+                'category' => 'rifle',
+                'wear' => 'field-tested',
+                'status' => 'available',
+                'inventory_id' => 2, // ID del inventario asociado
             ],
-            // Añade más items según necesites
+            [
+                'name' => 'AWP | Hyper Beast',
+                'image_url' => 'img/awp.png',
+                'price' => 20.00,
+                'rarity' => 'rare',
+                'category' => 'sniper',
+                'wear' => 'factory new',
+                'status' => 'available',
+                'inventory_id' => 2,
+            ],
+            [
+                'name' => 'Desert Eagle | Blaze',
+                'image_url' => 'img/deagle.png',
+                'price' => 8.50,
+                'rarity' => 'epic',
+                'category' => 'pistol',
+                'wear' => 'minimal wear',
+                'status' => 'available',
+                'inventory_id' => 2,
+            ],
+            [
+                'name' => 'P90 | Death by Kitty',
+                'image_url' => 'img/p90.png',
+                'price' => 5.00,
+                'rarity' => 'common',
+                'category' => 'smg',
+                'wear' => 'well-worn',
+                'status' => 'available',
+                'inventory_id' => 2,
+            ],
+            [
+                'name' => 'USP-S | Kill Confirmed',
+                'image_url' => 'img/usps.png',
+                'price' => 12.50,
+                'rarity' => 'legendary',
+                'category' => 'pistol',
+                'wear' => 'field-tested',
+                'status' => 'available',
+                'inventory_id' => 2,
+            ],
         ];
 
         foreach ($items as $item) {

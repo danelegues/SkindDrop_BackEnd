@@ -12,13 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->id(); // PK
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // FK a users
-            $table->foreignId('item_id')->constrained()->onDelete('cascade'); // FK a skins
-            $table->enum('type', ['buy', 'sell', 'bid']); // ENUM para type
-            $table->decimal('price', 10, 2); // Decimal para price
-            $table->enum('status', ['pending', 'completed', 'failed']); // ENUM para status
-            $table->timestamps(); // created_at y updated_at
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('item_id')->nullable()->constrained()->onDelete('set null');
+            $table->enum('type', ['buy', 'sell', 'bid', 'deposit']);
+            $table->decimal('price', 10, 2);
+            $table->decimal('amount', 10, 2);
+            $table->enum('status', ['pending', 'completed', 'failed']);
+            $table->timestamps();
         });
     }
     /**

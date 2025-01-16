@@ -18,4 +18,9 @@ class Inventory extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function marketListings()
+    {
+        return $this->hasMany(MarketListing::class);
+    }
 }
