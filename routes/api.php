@@ -9,6 +9,7 @@ use App\Http\Controllers\CrateController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MarketListingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GeoLocationController;
 
 
 
@@ -59,3 +60,5 @@ Route::middleware('auth:sanctum')->get('/users', [UserController::class, 'index'
 Route::middleware('auth:sanctum')->post('/users/{id}/alta', [UserController::class, 'alta']);
 Route::middleware('auth:sanctum')->post('/users/{id}/baja', [UserController::class, 'baja']);
 Route::middleware('auth:sanctum')->put('/users/{id}/modificar', [UserController::class, 'modificar']);
+
+Route::get('/detect-language', [GeoLocationController::class, 'detectLanguage']);

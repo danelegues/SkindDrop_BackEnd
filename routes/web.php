@@ -46,7 +46,7 @@ Route::get('/verify-email', function (Request $request) {
 
         if ($user->hasVerifiedEmail()) {
             \Log::info('Usuario ya verificado');
-            return redirect('http://54.91.73.91/login?status=already-verified');
+            return redirect('http://3.89.136.123:8000/login?status=already-verified');
         }
 
         if ($user->markEmailAsVerified()) {
@@ -54,14 +54,14 @@ Route::get('/verify-email', function (Request $request) {
             event(new Verified($user));
         }
 
-        return redirect('http://54.91.73.91/login?status=verified');
+        return redirect('http://3.89.136.123:8000/login?status=verified');
 
     } catch (\Exception $e) {
         \Log::error('Error en verificación de email: ' . $e->getMessage(), [
             'exception' => $e,
             'trace' => $e->getTraceAsString()
         ]);
-        return redirect('http://54.91.73.91/login?status=error');
+        return redirect('http://3.89.136.123:8000/login?status=error');
     }
 })->name('verification.verify');
 
@@ -81,20 +81,20 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
 
         // Si ya está verificado
         if ($user->hasVerifiedEmail()) {
-            return redirect('http://54.91.73.91/login?status=already-verified');
+            return redirect('http://3.89.136.123:8000/login?status=already-verified');
         }
 
         // Marcar como verificado
         $user->markEmailAsVerified();
         event(new Verified($user));
 
-        return redirect('http://54.91.73.91/login?status=verified');
+        return redirect('http://3.89.136.123:8000/login?status=verified');
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return redirect('http://54.91.73.91/login?status=user-not-found');
+        return redirect('http://3.89.136.123:8000/login?status=user-not-found');
     } catch (\Exception $e) {
         \Log::error('Error de verificación: ' . $e->getMessage());
-        return redirect('http://54.91.73.91/login?status=verification-failed');
+        return redirect('http://3.89.136.123:8000/login?status=verification-failed');
     }
 })->middleware('web')->name('verification.verify');
 
