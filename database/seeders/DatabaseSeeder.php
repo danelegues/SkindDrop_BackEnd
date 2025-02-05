@@ -56,7 +56,8 @@ class DatabaseSeeder extends Seeder
         // Llamar a otros seeders
         $this->call([
             CrateSeeder::class,
-            MarketListingSeeder::class
+            MarketListingSeeder::class,
+            BaseItemsSeeder::class,
         ]);
     }
 }

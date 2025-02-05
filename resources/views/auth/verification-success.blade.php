@@ -15,12 +15,15 @@
                 </svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-500 mb-2">¡Email Verificado!</h2>
-            <p class="text-gray-500 mb-6">Tu cuenta ha sido verificada correctamente.</p>
-            <a href="http://localhost:3000/login" class="inline-block bg-gray-400 text-white font-medium px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors duration-200">
-                Ir al inicio de sesión
-            </a>
+            <p class="text-gray-500 mb-6">{{ $message }}</p>
+            
+            <script>
+                // Redirigir después de 2 segundos
+                setTimeout(function() {
+                    window.location.href = "{{ $redirectUrl }}";
+                }, 2000);
+            </script>
         </div>
     </div>
 </body>
-
 </html>

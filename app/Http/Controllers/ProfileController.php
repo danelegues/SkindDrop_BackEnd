@@ -29,65 +29,27 @@ class ProfileController extends Controller
     }
     public function updateBalance(Request $request)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'amount' => 'required|numeric|min:0.01|max:10000'
-            ]);
+        $request->validate([
+            'amount' => 'required|numeric'
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $user = $request->user();
-            
-            // Si es una resta (compra de caja), verificar que haya suficiente balance
-            if ($request->has('subtract') && $request->subtract) {
-                if ($user->balance < $request->amount) {
-                    return response()->json([
-                        'message' => 'Balance insuficiente'
-                    ], 400);
-                }
-                $newBalance = $user->balance - $request->amount;
-            } else {
-                // Si es una suma (recarga de saldo)
-                $newBalance = $user->balance + $request->amount;
-            }
-
-            \DB::beginTransaction();
-            try {
-                $user->balance = $newBalance;
-                $user->save();
-
-                // Crear la transacción
-                $user->transactions()->create([
-                    'type' => $request->has('subtract') ? 'buy' : 'deposit',
-                    'amount' => $request->amount,
-                    'price' => $request->amount,
-                    'status' => 'completed'
-                ]);
-
-                \DB::commit();
-
-                return response()->json([
-                    'message' => 'Balance actualizado correctamente',
-                    'balance' => $user->balance
-                ]);
-
-            } catch (\Exception $e) {
-                \DB::rollback();
-                throw $e;
-            }
-
-        } catch (\Exception $e) {
-            \Log::error('Error en updateBalance: ' . $e->getMessage());
+        $user = Auth::user();
+        $newBalance = $user->balance + $request->amount;
+        
+        // Verificar que el balance no sea negativo
+        if ($newBalance < 0) {
             return response()->json([
-                'message' => 'Error al actualizar el balance',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Fondos insuficientes'
+            ], 422);
         }
+
+        $user->balance = $newBalance;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Balance actualizado correctamente',
+            'balance' => $user->balance
+        ]);
     }
 
     public function store(Request $request)

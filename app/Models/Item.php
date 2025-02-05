@@ -20,6 +20,12 @@ class Item extends Model
         'inventory_id'
     ];
 
+    // Definir las posibles opciones de status
+    const STATUS_TEMPLATE = 'template';
+    const STATUS_AVAILABLE = 'available';
+    const STATUS_ON_SALE = 'on_sale';
+    const STATUS_LOCKED = 'locked';
+
     // Un item pertenece a un inventario (belongs to)
     public function inventory()
     {

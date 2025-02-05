@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -29,6 +30,12 @@ class LoginController extends Controller
                 'message' => 'Por favor, verifica tu email antes de iniciar sesión',
                 'email_verified' => false
             ], 403);
+        }
+
+        // Verificar si el usuario está activo
+        if (!$user->is_active) {
+            Auth::logout(); // Cerrar sesión si el usuario no está activo
+            return response()->json(['message' => 'Cuenta inactiva.'], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

@@ -64,7 +64,7 @@ class CrateSeeder extends Seeder
                     'wear' => 'Minimal Wear',
                     'status' => 'available',
                     'inventory_id' => $inventory->id
-                ],
+                ]
             ];
 
             foreach ($items as $itemData) {

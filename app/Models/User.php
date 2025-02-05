@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\VerifyEmailNotification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -21,7 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'email',
         'password',
-        'balance'
+        'balance',
+        'is_active'
     ];
 
     /**
@@ -70,9 +72,15 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Transaction::class);
     }
 
-    // Asegúrate de que el balance se castee a decimal
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
+
+    // Corrige el problema de los casts duplicados
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'balance' => 'decimal:2'
+        'balance' => 'decimal:2',
+        'password' => 'hashed'
     ];
 }

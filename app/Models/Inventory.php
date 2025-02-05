@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Inventory extends Model
 {
-    protected $fillable = ['user_id', 'status'];
+    protected $fillable = [
+        'user_id',
+        'status'
+    ];
 
     // Un inventario tiene muchos items (one-to-many)
     public function items()

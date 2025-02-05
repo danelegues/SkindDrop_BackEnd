@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,13 +11,18 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('image_url');
-            $table->decimal('price', 10, 2);
-            $table->string('rarity');
+            $table->decimal('price', 10, 2)->default(0);
+            $table->string('rarity')->default('common');
             $table->string('category');
-            $table->string('wear');
-            $table->string('status');
-            $table->foreignId('inventory_id')->constrained()->onDelete('cascade');
+            $table->string('wear')->default('Factory New');
+            $table->string('status')->default('available');
+            $table->foreignId('inventory_id')->nullable()->constrained('inventories')->onDelete('cascade');
             $table->timestamps();
+
+            // Índices para mejorar el rendimiento
+            $table->index('status');
+            $table->index('name');
+            $table->index('rarity');
         });
     }
 
