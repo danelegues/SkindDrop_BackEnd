@@ -42,53 +42,92 @@ class SkinDropMarketController extends Controller
     public function purchase(Request $request, $itemId)
     {
         try {
+            \Log::info('Iniciando compra en SkinDrop', [
+                'user_id' => $request->user()->id,
+                'item_id' => $itemId
+            ]);
+
+            // Obtener el usuario y verificar su inventario
             $user = $request->user();
+            $inventory = $user->inventory;
+
+            if (!$inventory) {
+                \Log::error('Inventario no encontrado', ['user_id' => $user->id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inventario no encontrado'
+                ], 404);
+            }
+
+            // Buscar el item template
             $templateItem = Item::findOrFail($itemId);
 
             // Verificar fondos suficientes
             if ($user->balance < $templateItem->price) {
+                \Log::warning('Fondos insuficientes', [
+                    'user_balance' => $user->balance,
+                    'item_price' => $templateItem->price
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Fondos insuficientes'
                 ], 400);
             }
 
-            // Crear nuevo item para el usuario
-            $newItem = new Item([
-                'name' => $templateItem->name,
-                'image_url' => $templateItem->image_url,
-                'price' => $templateItem->price,
-                'rarity' => $templateItem->rarity,
-                'category' => $templateItem->category,
-                'wear' => $templateItem->wear,
-                'status' => 'available',
-                'inventory_id' => $user->inventory->id
-            ]);
+            try {
+                \DB::beginTransaction();
 
-            // Restar balance al usuario
-            $user->balance -= $templateItem->price;
-            
-            // Guardar cambios en una transacción
-            \DB::transaction(function () use ($user, $newItem) {
-                $user->save();
+                // Crear el nuevo item en el inventario del usuario
+                $newItem = new Item();
+                $newItem->name = $templateItem->name;
+                $newItem->image_url = $templateItem->image_url;
+                $newItem->price = $templateItem->price;
+                $newItem->rarity = $templateItem->rarity;
+                $newItem->category = $templateItem->category;
+                $newItem->wear = $templateItem->wear;
+                $newItem->status = 'available';
+                $newItem->inventory_id = $inventory->id;
                 $newItem->save();
-            });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Compra realizada con éxito',
-                'data' => $newItem
-            ]);
+                // Actualizar el balance del usuario
+                $user->balance -= $templateItem->price;
+                $user->save();
+
+                \DB::commit();
+
+                \Log::info('Compra completada exitosamente', [
+                    'new_item_id' => $newItem->id,
+                    'user_id' => $user->id,
+                    'inventory_id' => $inventory->id
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Compra realizada con éxito',
+                    'data' => [
+                        'item' => $newItem,
+                        'new_balance' => $user->balance
+                    ]
+                ]);
+
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                \Log::error('Error en la transacción de compra', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
 
         } catch (\Exception $e) {
-            Log::error('Error en la compra:', [
+            \Log::error('Error general en la compra', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al procesar la compra'
+                'message' => 'Error al procesar la compra: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -9,9 +9,15 @@ class MarketListing extends Model
     protected $table = 'market_listings';
 
     protected $fillable = [
-        'item_id',
         'inventory_id',
+        'user_id',
+        'item_id',
         'price',
+        'name',
+        'image_url',
+        'category',
+        'rarity',
+        'wear',
         'status'
     ];
 

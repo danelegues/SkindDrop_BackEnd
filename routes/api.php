@@ -53,7 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/skindrop-market/purchase/{itemId}', [SkinDropMarketController::class, 'purchase']);
 
     Route::post('/market/sell', [MarketController::class, 'sellItem']);
-    Route::post('/market/buy/{id}', [MarketController::class, 'buyItem']);
+    Route::post('/market/buy/{id}', [MarketListingController::class, 'buy']);
 });
 
 Route::get('/items', [ItemController::class, 'index']);
