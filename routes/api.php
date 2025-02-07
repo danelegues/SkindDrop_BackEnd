@@ -10,6 +10,8 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MarketListingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\GeoLocationController;
+use App\Http\Controllers\SkinDropMarketController;
+use App\Http\Controllers\MarketController;
 
 
 
@@ -40,13 +42,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/inventory', [InventoryController::class, 'store']); 
     Route::post('/inventory/add-item', [InventoryController::class, 'addItem']);
-    Route::get('/market', [MarketListingController::class, 'index']);
+    Route::get('/market', [MarketController::class, 'index']);
     
     // Rutas del mercado
     Route::get('/market/items', [MarketListingController::class, 'index']);
     Route::post('/market/items', [MarketListingController::class, 'store']);
     Route::delete('/market/remove/{id}', [MarketListingController::class, 'destroy']);
     Route::post('crates/open', [CrateController::class, 'openCrate']);
+
+    Route::get('/skindrop-market', [SkinDropMarketController::class, 'index']);
+    Route::post('/skindrop-market/purchase/{itemId}', [SkinDropMarketController::class, 'purchase']);
+
+    Route::post('/market/sell', [MarketController::class, 'sellItem']);
+    Route::post('/market/buy/{id}', [MarketController::class, 'buyItem']);
 });
 
 Route::get('/items', [ItemController::class, 'index']);

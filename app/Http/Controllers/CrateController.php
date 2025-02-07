@@ -78,33 +78,64 @@ class CrateController extends Controller
             \Log::info('Iniciando apertura de caja', ['request' => $request->all()]);
             
             $request->validate([
-                'name' => 'required|string',
+                'crateName' => 'required|string',  // Nombre de la caja
+                'itemName' => 'required|string',   // Nombre del item ganador
                 'image_url' => 'required|string'
             ]);
 
-            // Buscar el item template
-            $templateItem = Item::where('name', $request->name)
-                              ->where('status', 'template')
-                              ->first();
+            // Obtener el usuario autenticado
+            $user = $request->user();
 
-            if (!$templateItem) {
-                \Log::error('Template no encontrado para el item', ['name' => $request->name]);
+            // Buscar la caja por nombre
+            $crate = Crate::where('name', $request->crateName)->first();
+
+            if (!$crate) {
+                \Log::error('Caja no encontrada', ['name' => $request->crateName]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Item template no encontrado'
+                    'message' => 'Caja no encontrada'
                 ], 404);
             }
-// 
-            // Crear nuevo item basado en el template
+
+            // Verificar si el usuario tiene suficientes fondos
+            if ($user->balance < $crate->price) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fondos insuficientes para abrir la caja'
+                ], 400);
+            }
+
+            // Restar el precio de la caja del balance del usuario
+            $user->balance -= $crate->price;
+            $user->save();
+
+            // Buscar el item ganador entre los items de la caja
+            $winnerItem = $crate->items()
+                ->where('name', $request->itemName)
+                ->where('status', 'template')
+                ->first();
+
+            if (!$winnerItem) {
+                \Log::error('Item ganador no encontrado', [
+                    'crate_id' => $crate->id,
+                    'item_name' => $request->itemName
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Item ganador no encontrado'
+                ], 404);
+            }
+
+            // Crear nuevo item basado en el item ganador
             $newItem = new Item([
-                'name' => $templateItem->name,
-                'image_url' => $templateItem->image_url,
-                'price' => $templateItem->price,
-                'rarity' => $templateItem->rarity,
-                'category' => $templateItem->category,
-                'wear' => $templateItem->wear,
+                'name' => $winnerItem->name,
+                'image_url' => $winnerItem->image_url,
+                'price' => $winnerItem->price,
+                'rarity' => $winnerItem->rarity,
+                'category' => $winnerItem->category,
+                'wear' => $winnerItem->wear,
                 'status' => 'available',
-                'inventory_id' => $request->user()->inventory->id
+                'inventory_id' => $user->inventory->id
             ]);
 
             $newItem->save();

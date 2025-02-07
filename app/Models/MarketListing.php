@@ -6,13 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class MarketListing extends Model
 {
+    protected $table = 'market_listings';
+
     protected $fillable = [
         'item_id',
         'inventory_id',
-        'user_id',
         'price',
         'status'
     ];
+
+    protected $casts = [
+        'price' => 'float',
+        'user_id' => 'integer',
+        'item_id' => 'integer'
+    ];
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
 
     public function inventory()
     {
@@ -22,10 +34,5 @@ class MarketListing extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function item()
-    {
-        return $this->belongsTo(Item::class);
     }
 }

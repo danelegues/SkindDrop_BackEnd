@@ -16,24 +16,35 @@ class MarketListingController extends Controller
                         ->where('status', 'active')
                         ->get()
                         ->map(function ($listing) {
-                            $item = $listing->inventory->items->first();
+                            // Obtener el item correcto del inventario
+                            $item = Item::where('inventory_id', $listing->inventory_id)
+                                      ->where('status', 'on_sale')
+                                      ->first();
+
+                            if (!$item) {
+                                return null;
+                            }
+
                             return [
                                 'id' => $listing->id,
-                                'name' => $item->name,
-                                'image_url' =>$item->image_url,
+                                'name' => $item->name,           // Usar el nombre del item específico
+                                'image_url' => $item->image_url, // Usar la imagen del item específico
                                 'price' => $listing->price,
                                 'rarity' => $item->rarity,
                                 'category' => $item->category,
                                 'status' => $listing->status,
                                 'username' => $listing->user->username
                             ];
-                        });
+                        })
+                        ->filter() // Eliminar los nulls
+                        ->values(); // Reindexar el array
             
             return response()->json([
                 'success' => true,
                 'data' => $listings
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error al obtener los items del mercado: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener los items del mercado: ' . $e->getMessage()
@@ -44,35 +55,43 @@ class MarketListingController extends Controller
     public function store(Request $request)
     {
         try {
+            \Log::info('Datos recibidos en store:', $request->all());
+
+            // Validación
             $validated = $request->validate([
-                'item_id' => 'required|exists:items,id',
+                'item_id' => 'required|exists:items,id',  // Cambiado a item_id
                 'price' => 'required|numeric|min:0'
             ]);
 
-            // Verificar que el item pertenece al usuario
-            $item = Item::where('id', $validated['item_id'])
-                        ->whereHas('inventory', function($query) use ($request) {
-                            $query->where('user_id', $request->user()->id);
-                        })
-                        ->first();
-
-            if (!$item) {
+            // Obtener el item directamente
+            $item = Item::findOrFail($request->item_id);
+            
+            // Verificar que el usuario es dueño del item
+            $inventory = Inventory::where('user_id', auth()->id())->first();
+            if (!$inventory || $item->inventory_id !== $inventory->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Item no encontrado en tu inventario'
-                ], 404);
+                    'message' => 'No tienes permiso para vender este item'
+                ], 403);
             }
 
-            // Crear el listing
+            // Crear el listing usando los datos del item
             $listing = MarketListing::create([
-                'inventory_id' => $item->inventory_id,
-                'user_id' => $request->user()->id,
+                'inventory_id' => $inventory->id,
+                'user_id' => auth()->id(),
+                'item_id' => $item->id,
                 'price' => $validated['price'],
+                'name' => $item->name,
+                'image_url' => $item->image_url,
+                'category' => $item->category,
+                'rarity' => $item->rarity,
+                'wear' => $item->wear,
                 'status' => 'active'
             ]);
 
-            // Actualizar el estado del item
-            $item->update(['status' => 'on_sale']);
+            // Actualizar el status del item
+            $item->status = 'on_sale';
+            $item->save();
 
             return response()->json([
                 'success' => true,
@@ -81,6 +100,11 @@ class MarketListingController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error al crear listing:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error al poner el item en venta: ' . $e->getMessage()

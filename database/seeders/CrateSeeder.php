@@ -43,34 +43,25 @@ class CrateSeeder extends Seeder
             // Crear la crate
             $crate = Crate::create($crateData);
 
-            // Crear items asociados a la crate
-            $items = [
-                [
-                    'name' => 'Item 1',
-                    'image_url' => 'img/akruleta.png',
-                    'price' => 10.00,
-                    'rarity' => 'legendary',
-                    'category' => 'rifle',
-                    'wear' => 'Factory New',
-                    'status' => 'available',
-                    'inventory_id' => $inventory->id
-                ],
-                [
-                    'name' => 'Item 2',
-                    'image_url' => 'img/aung.png',
-                    'price' => 15.00,
-                    'rarity' => 'epic',
-                    'category' => 'sniper',
-                    'wear' => 'Minimal Wear',
-                    'status' => 'available',
-                    'inventory_id' => $inventory->id
-                ]
-            ];
+            // Obtener 16 items aleatorios de la base de datos
+            $randomItems = Item::inRandomOrder()->take(16)->get();
 
-            foreach ($items as $itemData) {
-                // Crear el item y asociarlo a la crate
-                $item = Item::create($itemData);
-                $crate->items()->attach($item->id); // Asociar el item a la crate
+            // Asociar los items a la crate
+            foreach ($randomItems as $item) {
+                // Crear una copia del item específicamente para esta caja
+                $crateItem = Item::create([
+                    'name' => $item->name,
+                    'image_url' => $item->image_url,
+                    'price' => $item->price,
+                    'rarity' => $item->rarity,
+                    'category' => $item->category,
+                    'wear' => $item->wear,
+                    'status' => 'template',
+                    'inventory_id' => null  // Los items template no pertenecen a ningún inventario
+                ]);
+
+                // Asociar el item a la crate
+                $crate->items()->attach($crateItem->id);
             }
         }
     }

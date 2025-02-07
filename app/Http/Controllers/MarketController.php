@@ -20,69 +20,70 @@ class MarketController extends Controller
     }
 
     // Obtener todos los items en el mercado
-    public function index()
+    public function index(Request $request)
     {
         try {
-            // Debug del usuario autenticado
-            Log::info('Usuario intentando acceder:', ['user_id' => Auth::id()]);
+            // Debug de autenticación
+            $user = Auth::user();
+            $token = $request->bearerToken();
 
-            // Verificar si hay listings en la base de datos
-            $listingsCount = MarketListing::count();
-            Log::info('Total de listings:', ['count' => $listingsCount]);
+            Log::info('Debug de autenticación', [
+                'token_exists' => !empty($token),
+                'token_start' => substr($token ?? '', 0, 20),
+                'user_authenticated' => Auth::check(),
+                'user_id' => $user ? $user->id : null,
+            ]);
 
-            // Obtener listings básicos primero
-            $listings = MarketListing::where('status', 'active')->get();
-            
-            if ($listings->isEmpty()) {
-                Log::info('No se encontraron listings activos');
+            // Si no hay usuario autenticado
+            if (!$user) {
                 return response()->json([
-                    'success' => true,
-                    'data' => []
-                ]);
+                    'success' => false,
+                    'message' => 'No autorizado',
+                    'debug' => 'Usuario no autenticado'
+                ], 401);
             }
 
-            // Transformar datos
-            $items = [];
-            foreach ($listings as $listing) {
-                $item = $listing->item;
-                $user = $listing->user;
+            // Query simplificada para debug
+            $items = Item::where('status', 'template')
+                        ->where('is_skindrop_market', true)
+                        ->where('available', true)
+                        ->limit(5) // Limitamos a 5 items para debug
+                        ->get();
 
-                if ($item && $user) {
-                    $items[] = [
-                        'id' => $listing->id,
-                        'item' => [
-                            'id' => $item->id,
-                            'name' => $item->name,
-                            'image_url' => $item->image_url,
-                            'category' => $item->category,
-                            'rarity' => $item->rarity
-                        ],
-                        'price' => $listing->price,
-                        'user' => [
-                            'id' => $user->id,
-                            'username' => $user->username
-                        ]
-                    ];
-                }
-            }
-
-            Log::info('Items procesados correctamente', ['count' => count($items)]);
+            Log::info('Query ejecutada', [
+                'sql' => Item::where('status', 'template')
+                    ->where('is_skindrop_market', true)
+                    ->where('available', true)
+                    ->limit(5)
+                    ->toSql(),
+                'items_count' => $items->count()
+            ]);
 
             return response()->json([
                 'success' => true,
-                'data' => $items
+                'data' => $items,
+                'debug' => [
+                    'user_id' => $user->id,
+                    'items_count' => $items->count()
+                ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error en MarketController:', [
+            Log::error('Error en MarketController', [
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error del servidor: ' . $e->getMessage()
+                'message' => 'Error del servidor',
+                'debug' => config('app.debug') ? [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ] : null
             ], 500);
         }
     }
@@ -116,12 +117,17 @@ class MarketController extends Controller
 
             DB::beginTransaction();
             try {
-                // Crear el listing
+                // Crear el listing usando los datos del item actual
                 $listing = MarketListing::create([
                     'item_id' => $item->id,
                     'inventory_id' => $item->inventory_id,
                     'user_id' => $request->user()->id,
                     'price' => $request->price,
+                    'name' => $item->name,           // Usar el nombre del item actual
+                    'image_url' => $item->image_url, // Usar la imagen del item actual
+                    'category' => $item->category,   // Usar la categoría del item actual
+                    'rarity' => $item->rarity,       // Usar la rareza del item actual
+                    'wear' => $item->wear,           // Usar el desgaste del item actual
                     'status' => 'active'
                 ]);
 
@@ -295,6 +301,85 @@ class MarketController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al procesar la compra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sellItem(Request $request)
+    {
+        \Log::info('Iniciando venta de item', ['request' => $request->all()]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Validación
+            $validated = $request->validate([
+                'item_id' => 'required|exists:items,id',
+                'price' => 'required|numeric|min:0'
+            ]);
+
+            // 2. Obtener el item y verificar propiedad
+            $item = Item::with('inventory')->findOrFail($validated['item_id']);
+            
+            if (!$item->inventory || $item->inventory->user_id !== auth()->id()) {
+                \Log::warning('Intento de venta no autorizado', [
+                    'item_id' => $item->id,
+                    'user_id' => auth()->id()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para vender este item'
+                ], 403);
+            }
+
+            // 3. Verificar si ya está en venta
+            $existingListing = MarketListing::where('item_id', $item->id)
+                ->where('status', 'active')
+                ->first();
+
+            if ($existingListing) {
+                \Log::warning('Item ya en venta', ['item_id' => $item->id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este item ya está en venta'
+                ], 400);
+            }
+
+            // 4. Crear nuevo listing
+            $listing = MarketListing::create([
+                'item_id' => $item->id,
+                'user_id' => auth()->id(),
+                'price' => $validated['price'],
+                'status' => 'active'
+            ]);
+
+            // 5. Actualizar estado del item
+            $item->status = 'on_sale';
+            $item->save();
+
+            DB::commit();
+
+            \Log::info('Item puesto en venta exitosamente', [
+                'listing_id' => $listing->id,
+                'item_id' => $item->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item puesto en venta exitosamente',
+                'data' => $listing
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error en venta de item', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al poner el item en venta: ' . $e->getMessage()
             ], 500);
         }
     }

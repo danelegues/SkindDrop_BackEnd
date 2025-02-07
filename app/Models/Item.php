@@ -11,13 +11,21 @@ class Item extends Model
 
     protected $fillable = [
         'name',
-        'image_url', 
+        'image_url',
         'price',
         'rarity',
         'category',
         'wear',
         'status',
-        'inventory_id'
+        'inventory_id',
+        'is_skindrop_market',
+        'available'
+    ];
+
+    protected $casts = [
+        'price' => 'float',
+        'is_skindrop_market' => 'boolean',
+        'available' => 'boolean'
     ];
 
     // Definir las posibles opciones de status
@@ -35,5 +43,10 @@ class Item extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function marketListing()
+    {
+        return $this->hasOne(MarketListing::class);
     }
 }
