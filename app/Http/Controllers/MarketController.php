@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Exception;
 
 class MarketController extends Controller
 {
@@ -23,53 +24,68 @@ class MarketController extends Controller
     public function index(Request $request)
     {
         try {
-            // Debug de autenticación
-            $user = Auth::user();
-            $token = $request->bearerToken();
-
-            Log::info('Debug de autenticación', [
-                'token_exists' => !empty($token),
-                'token_start' => substr($token ?? '', 0, 20),
-                'user_authenticated' => Auth::check(),
-                'user_id' => $user ? $user->id : null,
+            // 1. Debug de la petición
+            Log::info('Petición recibida en MarketController', [
+                'headers' => $request->headers->all(),
+                'token' => $request->bearerToken() ? 'presente' : 'ausente'
             ]);
 
-            // Si no hay usuario autenticado
+            // 2. Verificar autenticación
+            $user = Auth::user();
             if (!$user) {
+                Log::warning('Usuario no autenticado');
                 return response()->json([
                     'success' => false,
-                    'message' => 'No autorizado',
-                    'debug' => 'Usuario no autenticado'
+                    'message' => 'Usuario no autenticado'
                 ], 401);
             }
 
-            // Query simplificada para debug
-            $items = Item::where('status', 'template')
-                        ->where('is_skindrop_market', true)
-                        ->where('available', true)
-                        ->limit(5) // Limitamos a 5 items para debug
-                        ->get();
-
-            Log::info('Query ejecutada', [
-                'sql' => Item::where('status', 'template')
+            // 3. Intentar la consulta a la base de datos dentro de un try específico
+            try {
+                $query = Item::query()
+                    ->where('status', 'template')
                     ->where('is_skindrop_market', true)
-                    ->where('available', true)
-                    ->limit(5)
-                    ->toSql(),
-                'items_count' => $items->count()
-            ]);
+                    ->where('available', true);
 
-            return response()->json([
-                'success' => true,
-                'data' => $items,
-                'debug' => [
-                    'user_id' => $user->id,
-                    'items_count' => $items->count()
-                ]
-            ]);
+                // Log de la consulta SQL
+                Log::info('Query SQL:', [
+                    'sql' => $query->toSql(),
+                    'bindings' => $query->getBindings()
+                ]);
 
-        } catch (\Exception $e) {
-            Log::error('Error en MarketController', [
+                $items = $query->get();
+
+                // Log del resultado
+                Log::info('Items recuperados:', [
+                    'count' => $items->count(),
+                    'first_item' => $items->first() ? $items->first()->toArray() : null
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $items,
+                    'meta' => [
+                        'total' => $items->count(),
+                        'user_id' => $user->id
+                    ]
+                ]);
+
+            } catch (Exception $dbError) {
+                Log::error('Error en la consulta de base de datos:', [
+                    'message' => $dbError->getMessage(),
+                    'sql' => $query->toSql() ?? 'No disponible',
+                    'trace' => $dbError->getTraceAsString()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al consultar la base de datos',
+                    'debug' => config('app.debug') ? $dbError->getMessage() : null
+                ], 500);
+            }
+
+        } catch (Exception $e) {
+            Log::error('Error general en MarketController:', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -78,12 +94,12 @@ class MarketController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error del servidor',
-                'debug' => config('app.debug') ? [
-                    'error' => $e->getMessage(),
+                'message' => 'Error interno del servidor',
+                'error' => config('app.debug') ? [
+                    'message' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine()
-                ] : null
+                ] : 'Internal Server Error'
             ], 500);
         }
     }
