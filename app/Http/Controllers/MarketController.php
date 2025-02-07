@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Exception;
 
 class MarketController extends Controller
 {
@@ -24,82 +23,60 @@ class MarketController extends Controller
     public function index(Request $request)
     {
         try {
-            // 1. Debug de la petición
-            Log::info('Petición recibida en MarketController', [
-                'headers' => $request->headers->all(),
-                'token' => $request->bearerToken() ? 'presente' : 'ausente'
+            // Log del token para debugging
+            Log::info('Token recibido', [
+                'token' => $request->bearerToken(),
+                'user_id' => Auth::id()
             ]);
 
-            // 2. Verificar autenticación
-            $user = Auth::user();
-            if (!$user) {
-                Log::warning('Usuario no autenticado');
+            // Verificar autenticación
+            if (!Auth::check()) {
+                Log::warning('Usuario no autenticado intentando acceder al mercado');
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no autenticado'
+                    'message' => 'No autorizado',
+                    'data' => []
                 ], 401);
             }
 
-            // 3. Intentar la consulta a la base de datos dentro de un try específico
-            try {
-                $query = Item::query()
-                    ->where('status', 'template')
-                    ->where('is_skindrop_market', true)
-                    ->where('available', true);
+            // Obtener items y log del proceso
+            Log::info('Iniciando consulta de items');
+            
+            $items = Item::where('status', 'template')
+                        ->where('is_skindrop_market', true)
+                        ->where('available', true)
+                        ->get()
+                        ->map(function ($item) {
+                            return [
+                                'id' => $item->id,
+                                'name' => $item->name,
+                                'image_url' => $item->image_url,
+                                'price' => (float)$item->price,
+                                'rarity' => $item->rarity,
+                                'category' => $item->category,
+                                'wear' => $item->wear
+                            ];
+                        });
 
-                // Log de la consulta SQL
-                Log::info('Query SQL:', [
-                    'sql' => $query->toSql(),
-                    'bindings' => $query->getBindings()
-                ]);
+            Log::info('Consulta completada', [
+                'total_items' => $items->count(),
+                'primer_item' => $items->first()
+            ]);
 
-                $items = $query->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Items recuperados exitosamente',
+                'data' => $items
+            ], 200);
 
-                // Log del resultado
-                Log::info('Items recuperados:', [
-                    'count' => $items->count(),
-                    'first_item' => $items->first() ? $items->first()->toArray() : null
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $items,
-                    'meta' => [
-                        'total' => $items->count(),
-                        'user_id' => $user->id
-                    ]
-                ]);
-
-            } catch (Exception $dbError) {
-                Log::error('Error en la consulta de base de datos:', [
-                    'message' => $dbError->getMessage(),
-                    'sql' => $query->toSql() ?? 'No disponible',
-                    'trace' => $dbError->getTraceAsString()
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al consultar la base de datos',
-                    'debug' => config('app.debug') ? $dbError->getMessage() : null
-                ], 500);
-            }
-
-        } catch (Exception $e) {
-            Log::error('Error general en MarketController:', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
+        } catch (\Exception $e) {
+            Log::error('Error en MarketController::index', [
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? [
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine()
-                ] : 'Internal Server Error'
+                'message' => 'Error al cargar los items del mercado',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

@@ -12,10 +12,15 @@ class SkinDropMarketController extends Controller
     public function index()
     {
         try {
-            // Obtener todos los items template disponibles
-            $items = Item::where('status', 'template')
-                        ->select('id', 'name', 'image_url', 'price', 'rarity', 'category', 'wear')
-                        ->get();
+            // Obtener items únicos basados en el nombre usando distinct() y groupBy()
+            $items = Item::select('name')
+                        ->distinct()
+                        ->get()
+                        ->map(function ($item) {
+                            return Item::where('name', $item->name)
+                                     ->select('id', 'name', 'image_url', 'price', 'rarity', 'category', 'wear')
+                                     ->first();
+                        });
 
             return response()->json([
                 'success' => true,

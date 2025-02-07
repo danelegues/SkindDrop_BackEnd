@@ -42,10 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/inventory', [InventoryController::class, 'store']); 
     Route::post('/inventory/add-item', [InventoryController::class, 'addItem']);
-    Route::get('/market', [MarketController::class, 'index']);
+    Route::get('/market', [MarketListingController::class, 'index']);
     
     // Rutas del mercado
-    Route::get('/market/items', [MarketListingController::class, 'index']);
     Route::post('/market/items', [MarketListingController::class, 'store']);
     Route::delete('/market/remove/{id}', [MarketListingController::class, 'destroy']);
     Route::post('crates/open', [CrateController::class, 'openCrate']);
