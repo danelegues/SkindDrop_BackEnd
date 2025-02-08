@@ -52,9 +52,9 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://3.91.77.18'),
+    'url' => env('APP_URL', 'http://3.208.30.153'),
 
-    'frontend_url' => env('FRONTEND_URL', 'http://3.91.77.18'),
+    'frontend_url' => env('FRONTEND_URL', 'http://3.208.30.153'),
 
     /*
     |--------------------------------------------------------------------------
